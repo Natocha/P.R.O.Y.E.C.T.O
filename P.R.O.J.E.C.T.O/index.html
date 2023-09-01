@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel Paint JN</title>
+<!--Estilo En General De La Pagina-->
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+
+  #title {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+
+  #controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  #color-picker {
+    width: 80px;
+  }
+
+  #color-list {
+    width: 100px;
+  }
+
+  #grid-container {
+    display: flex;
+    flex-wrap: wrap;
+    width: 480px;
+    height: 480px;
+    border: 1px solid black;
+    margin-top: 20px;
+  }
+
+  .grid-item {
+    box-sizing: border-box;
+    width: calc(100% / 16);
+    height: calc(100% / 16);
+    border: 1px solid lightgray;
+  }
+
+  #favorites {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+  }
+
+  .favorite-color {
+    width: 30px;
+    height: 30px;
+    border: 1px solid lightgray;
+    cursor: pointer;
+  }
+  .button-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 20px;
+  }
+  
+</style>
+</head>
+<body>
+<div id="title">Pixel Paint JN</div>
+<div id="controls">
+  <input type="color" id="color-picker" value="#000000">
+  <select id="color-list">
+    <option value="#000000">Negro</option>
+    <option value="#FF0000">Rojo</option>
+    <option value="#00FF00">Verde</option>
+    <option value="#0000FF">Azul</option>
+  </select>
+  <button id="toggle-mode">Alternar Modo</button>
+  <button id="add-favorite">Agregar a Favoritos</button>
+</div>
+<div id="grid-container"></div>
+<div>
+  <h2>Favoritos</h2>
+  <div id="favorites"></div>
+</div>
+<script>
+  const gridContainer = document.getElementById("grid-container");
+  const colorPicker = document.getElementById("color-picker");
+  const colorList = document.getElementById("color-list");
+  const toggleModeButton = document.getElementById("toggle-mode");
+  const addFavoriteButton = document.getElementById("add-favorite");
+  const favoritesContainer = document.getElementById("favorites");
+
+  let currentColor = colorPicker.value;
+  let paintMode = "classic"; 
+
+  function createGrid(size) {
+    gridContainer.innerHTML = "";
+    gridContainer.style.width = `${size * 30}px`;
+    gridContainer.style.height = `${size * 30}px`;
+
+    for (let i = 0; i < size * size; i++) {
+      const gridItem = document.createElement("div");
+      gridItem.classList.add("grid-item");
+      /*MouseOver:el mouseover es el que pinta pasando por encima, el click solo deja pintar si haces click*/
+      if (paintMode === "classic") {
+        gridItem.addEventListener("mouseover", () => {
+          if (event.buttons === 1) {
+            gridItem.style.backgroundColor = currentColor;
+          }
+        });
+      } else if (paintMode === "click") {
+        gridItem.addEventListener("click", () => {
+          gridItem.style.backgroundColor = currentColor;
+        });
+      }
+
+      gridContainer.appendChild(gridItem);
+    }
+  }
+
+  function selectFavoriteColor(event) {
+    currentColor = event.target.style.backgroundColor;
+    colorPicker.value = currentColor;
+  }
+
+  addFavoriteButton.addEventListener("click", () => {
+    const favoriteColor = currentColor;
+    const favoriteBox = document.createElement("div");
+    favoriteBox.style.backgroundColor = favoriteColor;
+    favoriteBox.classList.add("favorite-color");
+    favoriteBox.addEventListener("click", selectFavoriteColor);
+    favoritesContainer.appendChild(favoriteBox);
+  });
+
+  colorPicker.addEventListener("input", (event) => {
+    currentColor = event.target.value;
+  });
+
+  colorList.addEventListener("change", (event) => {
+    currentColor = event.target.value;
+    colorPicker.value = currentColor;
+  });
+
+  toggleModeButton.addEventListener("click", () => {
+    paintMode = paintMode === "classic" ? "click" : "classic";
+    toggleModeButton.textContent = `Modo: ${paintMode}`;
+  });
+  const resetButton = document.createElement("button"); // Crear el botón de reinicio
+  resetButton.textContent = "Reiniciar Cuadrícula"; // Texto del botón
+  resetButton.addEventListener("click", () => {
+    createGrid(16); // Crear cuadrícula de 16x16 al reiniciar
+  });
+  document.getElementById("controls").appendChild(resetButton); // Agregar el botón al contenedor de controles
+
+  const saveButtons = []; // Arreglo para almacenar los botones de guardar
+  const loadButtons = []; // Arreglo para almacenar los botones de cargar
+  const slots = new Array(3).fill(null); // Arreglo para almacenar las cuadrículas guardadas
+
+  for (let i = 1; i <= 3; i++) {
+    const saveButton = document.createElement("button");
+    saveButton.textContent = `Guardar Slot ${i}`;
+    saveButton.addEventListener("click", () => {
+      slots[i - 1] = Array.from(gridContainer.children).map((item) => item.style.backgroundColor);
+    });
+    saveButtons.push(saveButton);
+    document.getElementById("controls").appendChild(saveButton);
+
+    const loadButton = document.createElement("button");
+    loadButton.textContent = `Cargar Slot ${i}`;
+    loadButton.addEventListener("click", () => {
+      loadGridFromSlot(i);
+    });
+    loadButtons.push(loadButton);
+    document.getElementById("controls").appendChild(loadButton);
+  }
+
+  // Función para cargar una cuadrícula desde un slot de guardado
+  function loadGridFromSlot(slotIndex) {
+    const savedGrid = slots[slotIndex - 1];
+    if (savedGrid) {
+      savedGrid.forEach((color, index) => {
+        gridContainer.children[index].style.backgroundColor = color;
+      });
+    }
+  }
+
+  
+
+  
+  // Crear cuadrícula inicial de 16x16(la funcion para cambiar de tamaño me bugueaba toda la pagina)
+  createGrid(16);
+</script>
+</body>
+</html>
